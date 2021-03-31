@@ -91,7 +91,10 @@ if __name__ == '__main__':
                                        classif_per_tp=classif_per_tp,
                                        n_labels=n_labels)
     elif args.sp_vae:
-        model = crea
+        model = create_spvae_model(args, input_dim, z0_prior, obsrv_std, device,
+                                       classif_per_tp=classif_per_tp,
+                                       n_labels=n_labels)
+
 
     else:
         raise Exception('Model not specified')
@@ -114,6 +117,7 @@ if __name__ == '__main__':
         utils.makedirs("logs/")
     logger = utils.get_logger(logpath=log_path, filepath=os.path.abspath(__file__))
     logger.info(input_command)
+    logger.info('Log file: {}.'.format(log_path))
 
     optimizer = optim.Adamax(model.parameters(), lr=args.lr)
 
@@ -145,10 +149,12 @@ if __name__ == '__main__':
                                                     device = device,
                                                     n_traj_samples = 3, kl_coef = kl_coef)
 
-                message = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Loss {:.6f} | Likelihood {:.6f} | KL fp {:.4f} | FP STD {:.4f}|'.format(
+                message = 'Epoch {:04d} [Test seq (cond on sampled tp)] | Loss {:.6f} | Likelihood {:.6f} | KL fp {:.4f} | prior logp {:.4f} | FP STD {:.4f}|'.format(
                     itr//num_batches,
                     test_res["loss"].detach(), test_res["likelihood"].detach(),
-                    test_res["kl_first_p"], test_res["std_first_p"])
+                    test_res["kl_first_p"],
+                    test_res['prior_log_prob'] if 'prior_log_prob' in test_res.keys() else float(0.0),
+                    test_res["std_first_p"])
 
                 logger.info("Experiment " + str(experimentID))
                 logger.info(message)
@@ -186,7 +192,7 @@ if __name__ == '__main__':
                     test_dict = utils.get_next_batch(data_obj["test_dataloader"])
 
                     print("plotting....")
-                    if isinstance(model, LatentODE) and (args.dataset == "periodic"): #and not args.classic_rnn and not args.ode_rnn:
+                    if (isinstance(model, LatentODE) or isinstance(model, SPVAE)) and (args.dataset == "periodic"): #and not args.classic_rnn and not args.ode_rnn:
                         plot_id = itr // num_batches // n_iters_to_viz
                         viz.draw_all_plots_one_dim(test_dict, model,
                                                    plot_name = file_name + "_" + str(experimentID) + "_{:03d}".format(plot_id) + ".png",

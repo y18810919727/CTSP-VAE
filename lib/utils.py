@@ -517,6 +517,7 @@ def compute_loss_all_batches(model,
     total["std_first_p"] = 0
     total["pois_likelihood"] = 0
     total["ce_loss"] = 0
+    total['prior_log_prob'] = 0
 
     n_test_batches = 0
 

@@ -63,9 +63,10 @@ parser.add_argument('--noise-weight', type=float, default=0.01, help="Noise ampl
 
 ######### New #########
 parser.add_argument('--sp_vae', action='store_true', help="stochastic process VAE.")
+parser.add_argument('--gpu', type=int, default=0, help="gpu id, default: 0")
 parser.add_argument('--posterior', type=str, default='cde', help="Type of posterior model: ode, cde")
 parser.add_argument('--posterior_bnn', action='store_true', help="Bayes neural network for posterior module")
-parser.add_argument('--prior', type=str, default='lg', help = "Type of prior model for CT latent process: "
+parser.add_argument('--prior', type=str, default='glc', help = "Type of prior model for CT latent process: "
                     "glc (linear model with constant covariance), "
                     "gac (affine model with constant covariance "
                     "gaa (affine model with adaptive covariance "
@@ -74,7 +75,7 @@ parser.add_argument('--prior', type=str, default='lg', help = "Type of prior mod
 #######################
 
 args = parser.parse_args()
-device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:{}".format(str(args.gpu)) if torch.cuda.is_available() else "cpu")
 
 utils.makedirs(args.save)
 

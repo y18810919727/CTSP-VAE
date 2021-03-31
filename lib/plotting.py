@@ -20,6 +20,7 @@ import torch.nn.functional as functional
 from matplotlib.lines import Line2D
 from torch.distributions.normal import Normal
 from lib.latent_ode import LatentODE
+from lib.sp_vae import SPVAE
 
 from lib.likelihood_eval import masked_gaussian_log_density, compute_poisson_proc_likelihood
 
@@ -297,12 +298,14 @@ class Visualizations():
         device = get_device(time_steps)
 
         time_steps_to_predict = time_steps
-        if isinstance(model, LatentODE):
+        if isinstance(model, LatentODE) or isinstance(model, SPVAE):
             # sample at the original time points
             time_steps_to_predict = utils.linspace_vector(time_steps[0], time_steps[-1], 100).to(device)
 
         reconstructions, info = model.get_reconstruction(time_steps_to_predict,
-                                                         observed_data, observed_time_steps, mask = observed_mask, n_traj_samples = 10)
+                                                         observed_data, observed_time_steps,
+                                                         mask=observed_mask, n_traj_samples=10,
+                                                         mode=data_dict['mode'])  # TODO
 
         n_traj_to_show = 3
         # plot only 10 trajectories
@@ -364,7 +367,7 @@ class Visualizations():
         ############################################
         # Plot trajectories from prior
 
-        if isinstance(model, LatentODE):
+        if isinstance(model, LatentODE) or isinstance(model, SPVAE):
             torch.manual_seed(1991)
             np.random.seed(1991)
 
@@ -393,7 +396,11 @@ class Visualizations():
         ################################################
         # Show vector field
         self.ax_vector_field.cla()
-        plot_vector_field(self.ax_vector_field, model.diffeq_solver.ode_func, model.latent_dim, device)
+        if isinstance(model, SPVAE):
+            plot_vector_field(self.ax_vector_field, model.prior_ode_solver.ode_func, model.latent_dim, device)
+        else:
+            plot_vector_field(self.ax_vector_field, model.diffeq_solver.ode_func, model.latent_dim, device)
+
         self.ax_vector_field.set_title("Slice of vector field (latent space)", pad = 20)
         self.set_plot_lims(self.ax_vector_field, "vector_field")
         #self.ax_vector_field.set_ylim((-0.5, 1.5))
